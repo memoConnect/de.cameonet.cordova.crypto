@@ -421,7 +421,7 @@ size_t encodeLength(unsigned char * buf, size_t length)
     // Now the actual key
     [encKey appendData:publicKeyBits];
     
-    NSString* b64key = [encKey base64EncodedStringWithOptions: NSDataBase64Encoding76CharacterLineLength];
+    NSString* b64key = [encKey base64EncodedStringWithOptions: NSDataBase64Encoding64CharacterLineLength];
     NSString* key = [NSString stringWithFormat:@"-----BEGIN PUBLIC KEY-----\n%@\n-----END PUBLIC KEY-----\n", b64key];
     
     return key;
@@ -472,7 +472,7 @@ size_t encodeLength(unsigned char * buf, size_t length)
     // Now the actual key
     [encKey appendData:privateKeyBits];
     
-    NSString* b64key = [encKey base64EncodedStringWithOptions: NSDataBase64Encoding76CharacterLineLength];
+    NSString* b64key = [encKey base64EncodedStringWithOptions: NSDataBase64Encoding64CharacterLineLength];
     NSString* key = [NSString stringWithFormat:@"-----BEGIN RSA PRIVATE KEY-----\n%@\n-----END RSA PRIVATE KEY-----\n", b64key];
     
     return key;
