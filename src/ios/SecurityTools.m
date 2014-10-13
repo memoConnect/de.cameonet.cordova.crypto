@@ -473,7 +473,7 @@ size_t encodeLength(unsigned char * buf, size_t length)
     [encKey appendData:privateKeyBits];
     
     NSString* b64key = [encKey base64EncodedStringWithOptions: NSDataBase64Encoding76CharacterLineLength];
-    NSString* key = [NSString stringWithFormat:@"-----BEGIN PRIVATE KEY-----\n%@\n-----END PRIVATE KEY-----\n", b64key];
+    NSString* key = [NSString stringWithFormat:@"-----BEGIN RSA PRIVATE KEY-----\n%@\n-----END RSA PRIVATE KEY-----\n", b64key];
     
     return key;
 }
