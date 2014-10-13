@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="de.cameonet.cordova.crypto"
+    version="0.1">
+
+	<name>cmCrypt</name>
+
+    <js-module src="www/CryptoHelper.js" name="CryptoHelper">
+        <clobbers target="CryptoHelper" />
+    </js-module>
+    
+	<platform name="ios">
+		<config-file target="config.xml" parent="/*">
+            <feature name="CryptoHelper">
+                <param name="ios-package" value="CryptoHelper"/>
+            </feature>
+        </config-file>
+		<framework src="Security.framework" />
+		<header-file src="src/ios/CryptoHelper.h" />
+		<source-file src="src/ios/CryptoHelper.m" />
+		<header-file src="src/ios/SecurityTools.h" />
+		<source-file src="src/ios/SecurityTools.m" />
+    </platform>	
+</plugin>
