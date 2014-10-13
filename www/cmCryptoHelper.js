@@ -7,15 +7,15 @@ var argscheck = require('cordova/argscheck'),
 // Tell cordova channel to wait on the CordovaInfoReady event
 // channel.waitForInitialization('onCordovaInfoReady');
 
-function CryptoHelper() {
+function cmCryptoHelper() {
 
 	this.getPublicKey = function(win, fail, keySize) {
-		exec(win, fail, "CryptoHelper", "getPublicKey", [keySize]);
+		exec(win, fail, "cmCryptoHelper", "getPublicKey", [keySize]);
 	}
 	
 	this.getPrivateKey = function(win, fail, keySize) {
-		exec(win, fail, "CryptoHelper", "getPrivateKey", [keySize]);
+		exec(win, fail, "cmCryptoHelper", "getPrivateKey", [keySize]);
 	}
 }
 
-module.exports = new CryptoHelper();
+module.exports = new cmCryptoHelper();

@@ -1,7 +1,7 @@
-#import "CryptoHelper.h"
+#import "cmCryptoHelper.h"
 #import "SecurityTools.h"
 
-@implementation CryptoHelper
+@implementation cmCryptoHelper
 
 const size_t BUFFER_SIZE = 64;
 const size_t CIPHER_BUFFER_SIZE = 1024;

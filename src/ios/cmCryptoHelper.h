@@ -3,7 +3,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCryptor.h>
 
-@interface CryptoHelper : CDVPlugin
+@interface cmCryptoHelper : CDVPlugin
 
 - (void) getPublicKey:(CDVInvokedUrlCommand*) command;
 - (void) getPrivateKey:(CDVInvokedUrlCommand*) command;
