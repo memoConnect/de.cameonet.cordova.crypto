@@ -8,10 +8,6 @@ var argscheck = require('cordova/argscheck'),
 // channel.waitForInitialization('onCordovaInfoReady');
 
 function cmCryptoHelper() {
-
-	this.getPublicKey = function(win, fail, keySize) {
-		exec(win, fail, "cmCryptoHelper", "getPublicKey", [keySize]);
-	}
 	
 	this.getPrivateKey = function(win, fail, keySize) {
 		exec(win, fail, "cmCryptoHelper", "getPrivateKey", [keySize]);
