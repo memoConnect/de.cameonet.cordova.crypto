@@ -17,6 +17,18 @@ function cmCryptoHelper() {
         exec(win, fail, "cmCryptoHelper", "encrypt", [publicKey, plainText]);
     }
 
+    this.decrypt = function(win, fail, privateKey, encryptedText) {
+        exec(win, fail, "cmCryptoHelper", "decrypt", [privateKey, encryptedText]);
+    }
+
+    this.sign = function(win, fail, privateKey, text) {
+        exec(win, fail, "cmCryptoHelper", "sign", [privateKey, text]);
+    }
+
+    this.verify = function(win, fail, publicKey, text, signature) {
+        exec(win, fail, "cmCryptoHelper", "verify", [privateKey, text, signature]);
+    }
+
 }
 
 module.exports = new cmCryptoHelper();
