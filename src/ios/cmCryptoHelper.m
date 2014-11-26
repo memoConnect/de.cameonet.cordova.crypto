@@ -56,7 +56,49 @@
         [self success:result callbackId:callbackId];
      
     });
-    
-    
-    }
+}
+
+
+- (void)encrypt:(CDVInvokedUrlCommand*)command
+{
+    NSString* callbackId = [command callbackId];
+
+    NSString* publicKey = [command.arguments objectAtIndex:0];
+    NSString* plainText = [command.arguments objectAtIndex:1];
+
+    // start queue for key generation
+    dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
+    dispatch_async(myQueue, ^{
+
+        NSData *data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
+
+        const unsigned char * key = (const unsigned char *) [publicKey UTF8String];
+
+        BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
+        RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
+
+        int maxSize = RSA_size(rsa);
+        unsigned char *encrypted = (unsigned char *) malloc(maxSize * sizeof(char));
+
+        int bytes = RSA_public_encrypt((int)[data length], [data bytes], encrypted, rsa, RSA_PKCS1_PADDING);
+
+        NSData *encryptedData = [NSData dataWithBytes:encrypted length:bytes];
+
+        NSString * encryptedBase64 = [encryptedData base64Encoding];
+
+        CDVPluginResult* result = [CDVPluginResult
+                                   resultWithStatus:CDVCommandStatus_OK
+                                   messageAsString: encryptedBase64];
+
+        BIO_free(bio);
+
+        [self success:result callbackId:callbackId];
+    });
+}
+
+
+
+
+
+
 @end

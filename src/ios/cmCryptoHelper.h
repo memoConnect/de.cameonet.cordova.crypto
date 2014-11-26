@@ -4,4 +4,7 @@
 
 - (void) getPrivateKey:(CDVInvokedUrlCommand*) command;
 
+- (void) encrypt:(CDVInvokedUrlCommand*) command;
+
+
 @end

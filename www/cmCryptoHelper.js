@@ -12,6 +12,11 @@ function cmCryptoHelper() {
 	this.getPrivateKey = function(win, fail, keySize) {
 		exec(win, fail, "cmCryptoHelper", "getPrivateKey", [keySize]);
 	}
+
+    this.encrypt = function(win, fail, publicKey, plainText) {
+        exec(win, fail, "cmCryptoHelper", "encrypt", [publicKey, plainText]);
+    }
+
 }
 
 module.exports = new cmCryptoHelper();
