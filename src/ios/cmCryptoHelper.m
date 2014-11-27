@@ -77,7 +77,7 @@
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
 
-        int maxSize = RSA_size(rsa);
+        int maxSize = plainText.length * 2;
         unsigned char *encrypted = (unsigned char *) malloc(maxSize * sizeof(char));
 
         int bytes = RSA_public_encrypt((int)[data length], [data bytes], encrypted, rsa, RSA_PKCS1_PADDING);
@@ -115,7 +115,7 @@
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
 
-        int maxSize = encryptedBase64.length;
+        int maxSize = encryptedBase64.length * 2;
         unsigned char *decrypted = (unsigned char *) malloc(maxSize * sizeof(char));
 
         int bytes = RSA_private_decrypt((int)[encryptedData length], [encryptedData bytes], decrypted, rsa, RSA_PKCS1_PADDING);
