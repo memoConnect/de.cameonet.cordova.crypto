@@ -21,12 +21,12 @@ function cmCryptoHelper() {
         exec(win, fail, "cmCryptoHelper", "decrypt", [privateKey, encryptedText]);
     }
 
-    this.sign = function(win, fail, publicKey, text) {
-        exec(win, fail, "cmCryptoHelper", "sign", [publicKey, text]);
+    this.sign = function(win, fail, privateKey, text) {
+        exec(win, fail, "cmCryptoHelper", "sign", [privateKey, text]);
     }
 
     this.verify = function(win, fail, publicKey, text, signature) {
-        exec(win, fail, "cmCryptoHelper", "verify", [privateKey, text, signature]);
+        exec(win, fail, "cmCryptoHelper", "verify", [publicKey, text, signature]);
     }
 
 }
