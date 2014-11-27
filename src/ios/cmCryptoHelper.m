@@ -97,36 +97,51 @@
 }
 
 
-- (void)decrypt:(CDVInvokedUrlCommand*)command
+
+-(NSString*) NSDataToHex:(NSData*)data
+{
+    const unsigned char *dbytes = [data bytes];
+    NSMutableString *hexStr =
+    [NSMutableString stringWithCapacity:[data length]*2];
+    int i;
+    for (i = 0; i < [data length]; i++) {
+        [hexStr appendFormat:@"%02x", dbytes[i]];
+    }
+    return [NSString stringWithString: hexStr];
+}
+
+- (void)sign:(CDVInvokedUrlCommand*)command
 {
     NSString* callbackId = [command callbackId];
 
     NSString* privateKey = [command.arguments objectAtIndex:0];
-    NSString* encryptedBase64 = [command.arguments objectAtIndex:1];
+    NSString* text = [command.arguments objectAtIndex:1];
 
     // start queue for key generation
     dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
     dispatch_async(myQueue, ^{
-
-        NSData * encryptedData = [[NSData alloc] initWithBase64EncodedString:encryptedBase64 options:0];
 
         const unsigned char * key = (const unsigned char *) [privateKey UTF8String];
 
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
 
-        int maxSize = encryptedBase64.length;
-        unsigned char *decrypted = (unsigned char *) malloc(maxSize * sizeof(char));
+        NSData * data = [text dataUsingEncoding:NSUTF8StringEncoding];
 
-        int bytes = RSA_private_decrypt((int)[encryptedData length], [encryptedData bytes], decrypted, rsa, RSA_PKCS1_PADDING);
+        int maxSize = RSA_size(rsa);
+        unsigned char *signature = (unsigned char *) malloc(maxSize * sizeof(char));
 
-        NSData *decryptedData = [NSData dataWithBytes:decrypted length:bytes];
+        int bytes = RSA_private_encrypt((int)[data length], [data bytes], signature, rsa, RSA_PKCS1_PADDING);
 
-        NSString * decryptedString = [[NSString alloc] initWithData:decryptedData encoding:NSUTF8StringEncoding];
+        NSData * signatureData = [NSData dataWithBytes:signature length:bytes];
+
+        NSString * signatureHex = [self NSDataToHex:signatureData];
+
+        NSLog(@"text: %@, sigdata: %@", text, signatureHex);
 
         CDVPluginResult* result = [CDVPluginResult
                                    resultWithStatus:CDVCommandStatus_OK
-                                   messageAsString: decryptedString];
+                                   messageAsString: signatureHex];
 
         BIO_free(bio);
         RSA_free(rsa);
