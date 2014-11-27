@@ -8,6 +8,9 @@
 
 - (void)getPrivateKey:(CDVInvokedUrlCommand*)command
 {
+        NSLog(@"cmCryptoHelper Plugin: generate key");
+
+
     NSString* callbackId = [command callbackId];
     
     NSString* sBits = [command.arguments objectAtIndex:0];
@@ -61,6 +64,9 @@
 
 - (void)encrypt:(CDVInvokedUrlCommand*)command
 {
+        NSLog(@"cmCryptoHelper Plugin: encrypt");
+
+
     NSString* callbackId = [command callbackId];
 
     NSString* publicKey = [command.arguments objectAtIndex:0];
@@ -99,6 +105,9 @@
 
 - (void)decrypt:(CDVInvokedUrlCommand*)command
 {
+        NSLog(@"cmCryptoHelper Plugin: decrypt");
+
+
     NSString* callbackId = [command callbackId];
 
     NSString* privateKey = [command.arguments objectAtIndex:0];
@@ -150,6 +159,10 @@
 
 - (void)sign:(CDVInvokedUrlCommand*)command
 {
+        NSLog(@"cmCryptoHelper Plugin: sign");
+
+
+
     NSString* callbackId = [command callbackId];
 
     NSString* privateKey = [command.arguments objectAtIndex:0];
@@ -189,9 +202,71 @@
     });
 }
 
+- (NSData *)hexToNSData:(NSString *) string {
+    const char *chars = [string UTF8String];
+    int i = 0, len = string.length;
 
+    NSMutableData *data = [NSMutableData dataWithCapacity:len / 2];
+    char byteChars[3] = {'\0','\0','\0'};
+    unsigned long wholeByte;
 
+    while (i < len) {
+        byteChars[0] = chars[i++];
+        byteChars[1] = chars[i++];
+        wholeByte = strtoul(byteChars, NULL, 16);
+        [data appendBytes:&wholeByte length:1];
+    }
 
+    return data;
+}
+
+- (void)verify:(CDVInvokedUrlCommand*)command
+{
+    NSLog(@"cmCryptoHelper Plugin: verify");
+
+    NSString* callbackId = [command callbackId];
+
+    NSString* publicKey = [command.arguments objectAtIndex:0];
+    NSString* text = [command.arguments objectAtIndex:1];
+    NSString* signature = [command.arguments objectAtIndex:2];
+
+    // start queue for key generation
+    dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
+    dispatch_async(myQueue, ^{
+
+        const unsigned char * key = (const unsigned char *) [publicKey UTF8String];
+
+        BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
+        RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
+
+        NSData * singatureData = [self hexToNSData:signature];
+
+        // get signed text
+        int maxSize = RSA_size(rsa) * sizeof(char) * 2;
+        unsigned char * signedText = (unsigned char *) malloc(maxSize);
+        int decryptBytes = RSA_public_decrypt((int)[singatureData length], [singatureData bytes], signedText, rsa, RSA_NO_PADDING);
+
+        // remove padding
+        signedText ++;
+        unsigned char * removedPadding = (unsigned char *) malloc(maxSize);
+        int bytes = RSA_padding_check_PKCS1_type_2(removedPadding, maxSize, signedText, decryptBytes -1, RSA_size(rsa));
+
+        // check if both texts match
+        NSData * signedData = [NSData dataWithBytes:removedPadding length:bytes];
+        NSData * originalData = [text dataUsingEncoding:NSUTF8StringEncoding];
+
+        NSString * res = [signedData isEqualToData:originalData] ? @"true" : @"false";
+
+        CDVPluginResult* result = [CDVPluginResult
+                                   resultWithStatus:CDVCommandStatus_OK
+                                   messageAsString: res];
+
+        BIO_free(bio);
+        RSA_free(rsa);
+
+        [self success:result callbackId:callbackId];
+    });
+}
 
 
 
