@@ -98,6 +98,7 @@
 
 
 
+
 -(NSString*) NSDataToHex:(NSData*)data
 {
     const unsigned char *dbytes = [data bytes];
@@ -128,15 +129,16 @@
 
         NSData * data = [text dataUsingEncoding:NSUTF8StringEncoding];
 
-        int maxSize = RSA_size(rsa);
-        unsigned char *signature = (unsigned char *) malloc(maxSize * sizeof(char));
+        // add padding
+        int maxSize = RSA_size(rsa) * sizeof(char);
+        unsigned char * paddedData = (unsigned char *) malloc(maxSize);
+        RSA_padding_add_PKCS1_type_2(paddedData, maxSize, [data bytes], (int)[data length]);
 
-        int bytes = RSA_private_encrypt((int)[data length], [data bytes], signature, rsa, RSA_PKCS1_PADDING);
-
+        // create signature
+        unsigned char *signature = (unsigned char *) malloc(maxSize);
+        int bytes = RSA_private_encrypt(maxSize, paddedData,signature, rsa, RSA_NO_PADDING);
         NSData * signatureData = [NSData dataWithBytes:signature length:bytes];
-
         NSString * signatureHex = [self NSDataToHex:signatureData];
-
         NSLog(@"text: %@, sigdata: %@", text, signatureHex);
 
         CDVPluginResult* result = [CDVPluginResult
@@ -149,6 +151,7 @@
         [self success:result callbackId:callbackId];
     });
 }
+
 
 
 
