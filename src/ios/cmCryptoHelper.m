@@ -67,38 +67,51 @@
     NSLog(@"cmCryptoHelper Plugin: encrypt");
     
     NSString* callbackId = [command callbackId];
-
+    
     NSString* publicKey = [command.arguments objectAtIndex:0];
     NSString* plainText = [command.arguments objectAtIndex:1];
-
+    
     // start queue for key generation
     dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
     dispatch_async(myQueue, ^{
-
+        
         NSData * data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
-
+        
         char * key = (char *) [publicKey UTF8String];
-
+        
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
-
+        
         int size = RSA_size(rsa);
         unsigned char * encrypted = (unsigned char *) malloc(size);
-
+        
         int bytes = RSA_public_encrypt((int)[data length], [data bytes], encrypted, rsa, RSA_PKCS1_PADDING);
-
-        NSData *encryptedData = [NSData dataWithBytes:encrypted length:bytes];
-
-        NSString * encryptedBase64 = [encryptedData base64Encoding];
-        CDVPluginResult* result = [CDVPluginResult
-                                   resultWithStatus:CDVCommandStatus_OK
-                                   messageAsString: encryptedBase64];
-
+        
+        if(bytes < 0) {
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_ERROR
+                                       messageAsString: @"openssl error"];
+            
+            [self error: result callbackId:callbackId];
+            
+        } else {
+            
+            NSData *encryptedData = [NSData dataWithBytes:encrypted length:bytes];
+            
+            NSString * encryptedBase64 = [encryptedData base64Encoding];
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_OK
+                                       messageAsString: encryptedBase64];
+            
+            [self success:result callbackId:callbackId];
+        }
+        
         free(encrypted);
         BIO_free_all(bio);
         RSA_free(rsa);
-
-        [self success:result callbackId:callbackId];
+        
     });
 }
 
@@ -127,19 +140,31 @@
         
         int bytes = RSA_private_decrypt((int)[encryptedData length], [encryptedData bytes], decrypted, rsa, RSA_PKCS1_PADDING);
         
-        NSData *decryptedData = [NSData dataWithBytes:decrypted length:bytes];
+        if(bytes < 0) {
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_ERROR
+                                       messageAsString: @"openssl error"];
+            
+            [self error: result callbackId:callbackId];
+            
+        } else {
+            
+            NSData *decryptedData = [NSData dataWithBytes:decrypted length:bytes];
+            
+            NSString * decryptedString = [[NSString alloc] initWithData:decryptedData encoding:NSUTF8StringEncoding];
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_OK
+                                       messageAsString: decryptedString];
+            
+            [self success:result callbackId:callbackId];
+        }
         
-        NSString * decryptedString = [[NSString alloc] initWithData:decryptedData encoding:NSUTF8StringEncoding];
-        
-        CDVPluginResult* result = [CDVPluginResult
-                                   resultWithStatus:CDVCommandStatus_OK
-                                   messageAsString: decryptedString];
-
         free(decrypted);
         BIO_free(bio);
         RSA_free(rsa);
         
-        [self success:result callbackId:callbackId];
     });
 }
 
@@ -186,19 +211,30 @@
         // create signature
         unsigned char *signature = (unsigned char *) malloc(maxSize);
         int bytes = RSA_private_encrypt(maxSize, paddedData,signature, rsa, RSA_NO_PADDING);
-        NSData * signatureData = [NSData dataWithBytes:signature length:bytes];
-        NSString * signatureHex = [self NSDataToHex:signatureData];
         
-        CDVPluginResult* result = [CDVPluginResult
-                                   resultWithStatus:CDVCommandStatus_OK
-                                   messageAsString: signatureHex];
+        if(bytes < 0) {
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_ERROR
+                                       messageAsString: @"openssl error"];
+            
+            [self error: result callbackId:callbackId];
+            
+        } else {
+            NSData * signatureData = [NSData dataWithBytes:signature length:bytes];
+            NSString * signatureHex = [self NSDataToHex:signatureData];
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_OK
+                                       messageAsString: signatureHex];
+            
+            [self success:result callbackId:callbackId];
+        }
         
         free(paddedData);
         free(signature);
         BIO_free(bio);
         RSA_free(rsa);
-        
-        [self success:result callbackId:callbackId];
     });
 }
 
@@ -248,26 +284,50 @@
         unsigned char * signedText = (unsigned char *) malloc(maxSize);
         int decryptBytes = RSA_public_decrypt((int)[singatureData length], [singatureData bytes], signedText, rsa, RSA_NO_PADDING);
         
-        // remove padding
-        signedText ++;
-        unsigned char * removedPadding = (unsigned char *) malloc(maxSize);
-        int bytes = RSA_padding_check_PKCS1_type_2(removedPadding, maxSize, signedText, decryptBytes -1, RSA_size(rsa));
-        
-        // check if both texts match
-        NSData * signedData = [NSData dataWithBytes:removedPadding length:bytes];
-        NSData * originalData = [text dataUsingEncoding:NSUTF8StringEncoding];
-        
-        NSString * res = [signedData isEqualToData:originalData] ? @"true" : @"false";
-        
-        CDVPluginResult* result = [CDVPluginResult
-                                   resultWithStatus:CDVCommandStatus_OK
-                                   messageAsString: res];
+        if(decryptBytes < 0) {
+            
+            CDVPluginResult* result = [CDVPluginResult
+                                       resultWithStatus:CDVCommandStatus_ERROR
+                                       messageAsString: @"openssl error"];
+            
+            [self error: result callbackId:callbackId];
+            
+        } else {
+            
+            // remove padding
+            signedText ++;
+            unsigned char * removedPadding = (unsigned char *) malloc(maxSize);
+            int bytes = RSA_padding_check_PKCS1_type_2(removedPadding, maxSize, signedText, decryptBytes -1, RSA_size(rsa));
+            
+            if(bytes < 0) {
+                
+                CDVPluginResult* result = [CDVPluginResult
+                                           resultWithStatus:CDVCommandStatus_ERROR
+                                           messageAsString: @"openssl error"];
+                
+                [self error: result callbackId:callbackId];
+                
+            } else {
+                
+                // check if both texts match
+                NSData * signedData = [NSData dataWithBytes:removedPadding length:bytes];
+                NSData * originalData = [text dataUsingEncoding:NSUTF8StringEncoding];
+                
+                NSString * res = [signedData isEqualToData:originalData] ? @"true" : @"false";
+                
+                CDVPluginResult* result = [CDVPluginResult
+                                           resultWithStatus:CDVCommandStatus_OK
+                                           messageAsString: res];
+                
+                
+                [self success:result callbackId:callbackId];
+            }
+            free(removedPadding);
 
-        free(removedPadding);
+        }
+        
         BIO_free(bio);
         RSA_free(rsa);
-        
-        [self success:result callbackId:callbackId];
     });
 }
 
