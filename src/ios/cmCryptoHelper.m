@@ -66,47 +66,45 @@
 {
     NSLog(@"cmCryptoHelper Plugin: encrypt");
     
-    
     NSString* callbackId = [command callbackId];
-    
+
     NSString* publicKey = [command.arguments objectAtIndex:0];
     NSString* plainText = [command.arguments objectAtIndex:1];
-    
+
     // start queue for key generation
     dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
     dispatch_async(myQueue, ^{
-        
-        NSData *data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
-        
-        const unsigned char * key = (const unsigned char *) [publicKey UTF8String];
-        
+
+        NSData * data = [plainText dataUsingEncoding:NSUTF8StringEncoding];
+
+        char * key = (char *) [publicKey UTF8String];
+
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
-        
-        int maxSize = plainText.length * 2;
-        unsigned char *encrypted = (unsigned char *) malloc(maxSize * sizeof(char));
-        
+
+        int size = RSA_size(rsa);
+        unsigned char * encrypted = (unsigned char *) malloc(size);
+
         int bytes = RSA_public_encrypt((int)[data length], [data bytes], encrypted, rsa, RSA_PKCS1_PADDING);
-        
+
         NSData *encryptedData = [NSData dataWithBytes:encrypted length:bytes];
-        
+
         NSString * encryptedBase64 = [encryptedData base64Encoding];
-        
         CDVPluginResult* result = [CDVPluginResult
                                    resultWithStatus:CDVCommandStatus_OK
                                    messageAsString: encryptedBase64];
-        
-        BIO_free(bio);
-        
+
+        free(encrypted);
+        BIO_free_all(bio);
+        RSA_free(rsa);
+
         [self success:result callbackId:callbackId];
     });
 }
 
-
 - (void)decrypt:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"cmCryptoHelper Plugin: decrypt");
-    
     
     NSString* callbackId = [command callbackId];
     
@@ -119,13 +117,13 @@
         
         NSData * encryptedData = [[NSData alloc] initWithBase64EncodedString:encryptedBase64 options:0];
         
-        const unsigned char * key = (const unsigned char *) [privateKey UTF8String];
+        char * key = (char *) [privateKey UTF8String];
         
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
         
-        int maxSize = encryptedBase64.length * 2;
-        unsigned char *decrypted = (unsigned char *) malloc(maxSize * sizeof(char));
+        int maxSize = RSA_size(rsa);
+        unsigned char *decrypted = (unsigned char *) malloc(maxSize);
         
         int bytes = RSA_private_decrypt((int)[encryptedData length], [encryptedData bytes], decrypted, rsa, RSA_PKCS1_PADDING);
         
@@ -136,7 +134,8 @@
         CDVPluginResult* result = [CDVPluginResult
                                    resultWithStatus:CDVCommandStatus_OK
                                    messageAsString: decryptedString];
-        
+
+        free(decrypted);
         BIO_free(bio);
         RSA_free(rsa);
         
@@ -172,7 +171,7 @@
     dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
     dispatch_async(myQueue, ^{
         
-        const unsigned char * key = (const unsigned char *) [privateKey UTF8String];
+        char * key = (char *) [privateKey UTF8String];
         
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
@@ -180,7 +179,7 @@
         NSData * data = [text dataUsingEncoding:NSUTF8StringEncoding];
         
         // add padding
-        int maxSize = RSA_size(rsa) * sizeof(char);
+        int maxSize = RSA_size(rsa);
         unsigned char * paddedData = (unsigned char *) malloc(maxSize);
         RSA_padding_add_PKCS1_type_2(paddedData, maxSize, [data bytes], (int)[data length]);
         
@@ -189,12 +188,13 @@
         int bytes = RSA_private_encrypt(maxSize, paddedData,signature, rsa, RSA_NO_PADDING);
         NSData * signatureData = [NSData dataWithBytes:signature length:bytes];
         NSString * signatureHex = [self NSDataToHex:signatureData];
-        NSLog(@"text: %@, sigdata: %@", text, signatureHex);
         
         CDVPluginResult* result = [CDVPluginResult
                                    resultWithStatus:CDVCommandStatus_OK
                                    messageAsString: signatureHex];
         
+        free(paddedData);
+        free(signature);
         BIO_free(bio);
         RSA_free(rsa);
         
@@ -236,7 +236,7 @@
     dispatch_queue_t myQueue = dispatch_queue_create("OpenSSL",NULL);
     dispatch_async(myQueue, ^{
         
-        const unsigned char * key = (const unsigned char *) [publicKey UTF8String];
+        char * key = (char *) [publicKey UTF8String];
         
         BIO *bio = BIO_new_mem_buf((void*)key, (int)strlen(key));
         RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
@@ -262,7 +262,8 @@
         CDVPluginResult* result = [CDVPluginResult
                                    resultWithStatus:CDVCommandStatus_OK
                                    messageAsString: res];
-        
+
+        free(removedPadding);
         BIO_free(bio);
         RSA_free(rsa);
         
