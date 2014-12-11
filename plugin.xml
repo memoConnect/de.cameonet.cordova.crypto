@@ -5,6 +5,7 @@
     version="0.1">
 
 	<name>cmCryptoHelper</name>
+    <description>cameoNet Crypto Plugin</description>
 
     <js-module src="www/cmCryptoHelper.js" name="cmCryptoHelper">
         <clobbers target="cmCryptoHelper" />
